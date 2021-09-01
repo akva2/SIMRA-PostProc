@@ -14,6 +14,7 @@
 #define SIM_SIMRA_TRANSFER_H
 
 #include "SIMSimraProject.h"
+#include "SimraFieldGenerator.h"
 
 
 /*!
@@ -82,6 +83,9 @@ public:
   //! \brief Returns \e true if use of a nesting region is configured.
   bool hasNestingRegion() const;
 
+  //! \brief Fix-up solution (add missing data).
+  void fixupSolution();
+
 protected:
   //! \brief Parses a data section from an XML document.
   //! \param[in] elem The XML element to parse
@@ -100,6 +104,7 @@ protected:
   NestedRegion configuredRegion; //!< Configured nesting region
   double nestingTolerance = -1.0;
   std::vector<int> inflow_faces; //!< Preconfigured inflow faces
+  SimraFieldGenerator gen; //!< Field generator
 
 private:
   //! \brief Obtain a reference to the IFEM-to-simra node mapping.

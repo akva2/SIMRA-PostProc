@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<simulation>
+  <!-- General - geometry definitions !-->
+  <simra_input>
+    <geometry>
+      <patchfile>Box4.dat</patchfile>
+      <topologysets>
+        <set name="Bottom" type="face">
+          <item patch="1">5</item>
+        </set>
+      </topologysets>
+    </geometry>
+    <boundaryfile>Box4-fixup.boun.orig</boundaryfile>
+    <resultfile type="init">Box4-fixup.init.orig</resultfile>
+    <generator velocity="true"
+               bl_height="2000"
+               wind_speed="20"
+               wind_direction="330"
+      surface_roughness="0.3"
+      />
+  </simra_input>
+
+  <simra_output>
+    <geometry>
+      <patchfile>Box4.dat</patchfile>
+    </geometry>
+    <resultfile type="init">Box4-fixup.init</resultfile>
+    <boundaryfile>Box4-fixup.boun</boundaryfile>
+  </simra_output>
+
+</simulation>

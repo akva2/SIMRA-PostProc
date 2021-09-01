@@ -11,8 +11,11 @@
 //==============================================================================
 
 #include "SIMSimraTransfer.h"
-#include "SimraIO.h"
+
 #include "ASMs3DSimra.h"
+#include "SimraFieldGenerator.h"
+#include "SimraIO.h"
+
 #include "IFEM.h"
 #include "Utilities.h"
 #include "Vec3Oper.h"
@@ -21,7 +24,7 @@
 
 
 SIMSimraTransfer::SIMSimraTransfer (const std::string& context) :
-  SIMSimraProject(context)
+  SIMSimraProject(context), gen(solution)
 {
   for (std::array<int,3>& it : configuredRegion)
     std::fill(it.begin(), it.end(), -1);
@@ -77,6 +80,9 @@ bool SIMSimraTransfer::parse (const TiXmlElement *elem)
           for (int face : inflow_faces)
             IFEM::cout << " " << face;
           IFEM::cout << std::endl;
+      } else if (!strcasecmp(child->Value(), "generator")) {
+        gen.read(child);
+        gen.print();
       }
   }
 
@@ -514,4 +520,45 @@ bool SIMSimraTransfer::hasNestingRegion () const
   return nestingTolerance != -1.0 ||
          (std::find(cr[0].begin(), cr[0].end(), -1) == cr[0].end() &&
           std::find(cr[1].begin(), cr[1].end(), -1) == cr[1].end());
+}
+
+
+void SIMSimraTransfer::fixupSolution ()
+{
+  const ASMs3DSimra* pch = static_cast<const ASMs3DSimra*>(this->getPatch(1));
+  std::array<size_t,3> n;
+  pch->getNoStructNodes(n[0],n[1],n[2]);
+
+  gen.setPatch(pch);
+
+  if (gen.generateVelocity()) {
+    IFEM::cout << ">>> Generating uniform velocity profile." << std::endl;
+    gen.uniformVelocity();
+  }
+
+  if (solution[PT].norm2() == 0.0 || gen.generateVelocity()) {
+    IFEM::cout << ">>> Potential temperature missing, re-created using idealized conditions." << std::endl;
+    gen.hydrostaticConditions();
+  }
+
+  if ((solution[TK].norm2() == 0.0 && solution[TD].norm2() == 0.0) || gen.generateVelocity()) {
+    IFEM::cout << ">>> Turbulence fields missing, re-created using idealized conditions." << std::endl;
+    gen.turbulenceFields();
+  }
+
+  if (this->getBoundaryFile().empty()) {
+    IFEM::cout << ">>> No boundary file, re-created surface roughness using configured constant." << std::endl;
+    this->bnd.z0.resize(n[0]*n[1], gen.surfaceRoughness());
+    this->bnd.wall.reserve(n[0]*n[1]);
+    this->bnd.log.reserve(n[0]*n[1]);
+    const auto& nMap = this->getNodeMapping();
+    for (size_t j = 0; j < n[1]; ++j)
+      for (size_t i = 0; i < n[0]; ++i) {
+        this->bnd.wall.push_back(nMap[i + j*n[0]]);
+        this->bnd.log.push_back(nMap[i + j*n[0] + n[0]*n[1]]);
+      }
+  }
+
+  // null out vertical velocity on top
+  std::fill(solution[U_Z].begin()+(n[2]-1)*n[1]*n[0], solution[U_Z].end(), 0.0);
 }
