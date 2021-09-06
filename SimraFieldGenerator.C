@@ -117,8 +117,8 @@ void SimraFieldGenerator::uniformVelocity ()
   for (size_t k = 0; k < n[2]; ++k) {
     Vec3 coord = pch->getCoord(1 + k*n[0]*n[1]);
     double z = coord[2]-z_bakke[2]+z0;
-    eta = std::min(z/delta, 1.0);
-    wake = 3.0*eta - 2.0*eta*eta;
+    double eta = std::min(z/delta, 1.0);
+    double wake = 3.0*eta - 2.0*eta*eta;
     double profu = std::min((ustar/cappa)*(std::log(z/z0)+wake), u_a);
     pro_u[k] = profu*cos(alpha);
     pro_v[k] = profu*sin(alpha);
@@ -238,6 +238,7 @@ SimraFieldGenerator::hydrostaticPressureDensity (const std::vector<double>& T_pr
   static constexpr double p_ref = 100000.0;  // static pressure at sea level [Pa]
   static constexpr double R_gas = 287.0; // Gas constant
   static constexpr double gamma = 2.0 / 7.0;
+
   std::array<std::vector<double>,3> result;
   result[0].resize(n[2]);
   result[1].resize(n[2]);

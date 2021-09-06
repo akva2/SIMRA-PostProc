@@ -17,6 +17,7 @@
 #include "SimraIO.h"
 
 #include "IFEM.h"
+#include "LagrangeInterpolator.h"
 #include "Utilities.h"
 #include "Vec3Oper.h"
 
@@ -536,6 +537,45 @@ void SIMSimraTransfer::fixupSolution ()
     gen.uniformVelocity();
   }
 
+  // Lambda to calculate an IFEM index.
+  const auto&& idx = [n](size_t i, size_t j, size_t k) { return i + (j + k*n[1])*n[0]; };
+
+  // The invalid points from VTK interpolation are stored in PS.
+  // Correct the data by linear interpolation along each column.
+  if (solution[PS].norm2() != 0.0) {
+    for (size_t j = 0; j < n[1]; ++j)
+      for (size_t i = 0; i < n[0]; ++i) {
+        size_t k;
+        for (k = 0; k < n[2]; ++k)
+          if (solution[PS][idx(i,j,k)] != 0.0)
+            break;
+
+        Vec3 coord1 = pch->getCoord(1 + idx(i,j,0));
+        Vec3 coord2 = pch->getCoord(1 + idx(i,j,k));
+        LagrangeInterpolator lag({coord1[2], coord2[2]});
+
+        // Lambda to extract data for interpolation.
+        auto&& extract = [i,j,k,idx](const Vector& in)
+        {
+          std::vector<double> result(2);
+          result[0] = in[idx(i,j,0)];
+          result[1] = in[idx(i,j,k)];
+          return result;
+        };
+
+        auto xdata = extract(solution[U_X]);
+        auto ydata = extract(solution[U_Y]);
+        auto zdata = extract(solution[U_Z]);
+
+        for (size_t k2 = 0; k2 < k; ++k2) {
+          Vec3 coord = pch->getCoord(1 + idx(i,j,k2));
+          solution[U_X][idx(i,j,k2)] = lag.interpolate(coord[2], xdata);
+          solution[U_Y][idx(i,j,k2)] = lag.interpolate(coord[2], ydata);
+          solution[U_Z][idx(i,j,k2)] = lag.interpolate(coord[2], zdata);
+        }
+      }
+  }
+
   if (solution[PT].norm2() == 0.0 || gen.generateVelocity()) {
     IFEM::cout << ">>> Potential temperature missing, re-created using idealized conditions." << std::endl;
     gen.hydrostaticConditions();
@@ -554,8 +594,8 @@ void SIMSimraTransfer::fixupSolution ()
     const auto& nMap = this->getNodeMapping();
     for (size_t j = 0; j < n[1]; ++j)
       for (size_t i = 0; i < n[0]; ++i) {
-        this->bnd.wall.push_back(nMap[i + j*n[0]]);
-        this->bnd.log.push_back(nMap[i + j*n[0] + n[0]*n[1]]);
+        this->bnd.wall.push_back(nMap[idx(i,j,0)]);
+        this->bnd.log.push_back(nMap[idx(i,j,1)]);
       }
   }
 
