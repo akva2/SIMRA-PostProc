@@ -11,9 +11,13 @@
 //==============================================================================
 
 #include "SIMSimraTransfer.h"
-#include "SimraIO.h"
+
 #include "ASMs3DSimra.h"
+#include "SimraFieldGenerator.h"
+#include "SimraIO.h"
+
 #include "IFEM.h"
+#include "LagrangeInterpolator.h"
 #include "Utilities.h"
 #include "Vec3Oper.h"
 
@@ -21,7 +25,7 @@
 
 
 SIMSimraTransfer::SIMSimraTransfer (const std::string& context) :
-  SIMSimraProject(context)
+  SIMSimraProject(context), gen(solution)
 {
   for (std::array<int,3>& it : configuredRegion)
     std::fill(it.begin(), it.end(), -1);
@@ -76,6 +80,9 @@ bool SIMSimraTransfer::parse (const TiXmlElement *elem)
           for (int face : inflow_faces)
             IFEM::cout << " " << face;
           IFEM::cout << std::endl;
+      } else if (!strcasecmp(child->Value(), "generator")) {
+        gen.read(child);
+        gen.print();
       }
   }
 
@@ -512,4 +519,84 @@ bool SIMSimraTransfer::hasNestingRegion () const
   return nestingTolerance != -1.0 ||
          (std::find(cr[0].begin(), cr[0].end(), -1) == cr[0].end() &&
           std::find(cr[1].begin(), cr[1].end(), -1) == cr[1].end());
+}
+
+
+void SIMSimraTransfer::fixupSolution ()
+{
+  const ASMs3DSimra* pch = static_cast<const ASMs3DSimra*>(this->getPatch(1));
+  std::array<size_t,3> n;
+  pch->getNoStructNodes(n[0],n[1],n[2]);
+
+  gen.setPatch(pch);
+
+  if (gen.generateVelocity()) {
+    IFEM::cout << ">>> Generating uniform velocity profile." << std::endl;
+    gen.uniformVelocity();
+  }
+
+  // Lambda to calculate an IFEM index.
+  const auto&& idx = [n](size_t i, size_t j, size_t k) { return i + (j + k*n[1])*n[0]; };
+
+  // The invalid points from VTK interpolation are stored in PS.
+  // Correct the data by linear interpolation along each column.
+  if (solution[PS].norm2() != 0.0) {
+    for (size_t j = 0; j < n[1]; ++j)
+      for (size_t i = 0; i < n[0]; ++i) {
+        size_t k;
+        for (k = 0; k < n[2]; ++k)
+          if (solution[PS][idx(i,j,k)] != 0.0)
+            break;
+
+        Vec3 coord1 = pch->getCoord(1 + idx(i,j,0));
+        Vec3 coord2 = pch->getCoord(1 + idx(i,j,k));
+        LagrangeInterpolator lag({coord1[2], coord2[2]});
+
+        // Lambda to extract data for interpolation.
+        auto&& extract = [i,j,k,idx](const Vector& in)
+        {
+          std::vector<double> result(2);
+          result[0] = in[idx(i,j,0)];
+          result[1] = in[idx(i,j,k)];
+          return result;
+        };
+
+        auto xdata = extract(solution[U_X]);
+        auto ydata = extract(solution[U_Y]);
+        auto zdata = extract(solution[U_Z]);
+
+        for (size_t k2 = 0; k2 < k; ++k2) {
+          Vec3 coord = pch->getCoord(1 + idx(i,j,k2));
+          solution[U_X][idx(i,j,k2)] = lag.interpolate(coord[2], xdata);
+          solution[U_Y][idx(i,j,k2)] = lag.interpolate(coord[2], ydata);
+          solution[U_Z][idx(i,j,k2)] = lag.interpolate(coord[2], zdata);
+        }
+      }
+  }
+
+  if (solution[PT].norm2() == 0.0 || gen.generateVelocity()) {
+    IFEM::cout << ">>> Potential temperature missing, re-created using idealized conditions." << std::endl;
+    gen.hydrostaticConditions();
+  }
+
+  if ((solution[TK].norm2() == 0.0 && solution[TD].norm2() == 0.0) || gen.generateVelocity()) {
+    IFEM::cout << ">>> Turbulence fields missing, re-created using idealized conditions." << std::endl;
+    gen.turbulenceFields();
+  }
+
+  if (this->getBoundaryFile().empty()) {
+    IFEM::cout << ">>> No boundary file, re-created surface roughness using configured constant." << std::endl;
+    this->bnd.z0.resize(n[0]*n[1], gen.surfaceRoughness());
+    this->bnd.wall.reserve(n[0]*n[1]);
+    this->bnd.log.reserve(n[0]*n[1]);
+    const auto& nMap = this->getNodeMapping();
+    for (size_t j = 0; j < n[1]; ++j)
+      for (size_t i = 0; i < n[0]; ++i) {
+        this->bnd.wall.push_back(nMap[idx(i,j,0)]);
+        this->bnd.log.push_back(nMap[idx(i,j,1)]);
+      }
+  }
+
+  // null out vertical velocity on top
+  std::fill(solution[U_Z].begin()+(n[2]-1)*n[1]*n[0], solution[U_Z].end(), 0.0);
 }

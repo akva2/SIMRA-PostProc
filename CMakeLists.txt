@@ -15,6 +15,7 @@ endif()
 
 set(SIMRA_SRCS ASMs3DSimra.C
                FSWallDistance.C
+               SimraFieldGenerator.C
                SimraIntegrand.C
                SimraIO.C
                SIMFSWallDistance.C
@@ -24,6 +25,8 @@ set(SIMRA_SRCS ASMs3DSimra.C
                ASMs3DSimra.h
                FSWallDistance.h
                SIMFSWallDistance.h
+               SimraFieldGenerator.h
+               SimraEnums.h
                SimraIntegrand.h
                SimraIO.h
                SIMSimraBase.h
@@ -71,6 +74,14 @@ if(NOT MPI_FOUND OR IFEM_SERIAL_TESTS_IN_PARALLEL)
                         Box-classify.xinp
                         ${PROJECT_SOURCE_DIR}/Test
                         1e-5)
+
+  add_test(Box_fixup ${PROJECT_SOURCE_DIR}/scripts/runCompareTest.sh
+                     ${PROJECT_BINARY_DIR}/bin/SIMRA-SolutionTransfer
+                     ${PROJECT_BINARY_DIR}/bin/SIMRA-CompareSetup
+                     Box-fixup.xinp
+                     ${PROJECT_SOURCE_DIR}/Test
+                     1e-5
+                     -selfTransfer -fixup)
 endif()
 list(APPEND TEST_APPS SIMRA-PostProc SIMRA-SolutionTransfer SIMRA-CompareSetup)
 foreach(SRC ${SIMRA_SRCS} main_SolutionTransfer.C main_CompareSetup.C main_PostProc.C)

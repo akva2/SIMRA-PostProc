@@ -50,6 +50,7 @@ int main (int argc, char** argv)
   utl::profiler->start("Initialization");
   char* infile = nullptr;
   bool selfTransfer = false;
+  bool fixup = false;
 
   SIM3D::msgLevel = 1;
 
@@ -63,6 +64,8 @@ int main (int argc, char** argv)
       ASMs3DSimra::useDouble = true;
     else if (!strcasecmp(argv[i],"-selfTransfer"))
       selfTransfer = true;
+    else if (!strcasecmp(argv[i],"-fixup"))
+      fixup = true;
    else
      std::cerr <<"  ** Unknown option ignored: "<< argv[i] << std::endl;
 
@@ -131,6 +134,9 @@ int main (int argc, char** argv)
   if (!input_model.readResults())
     return 5;
 
+  if (fixup)
+    input_model.fixupSolution();
+
   Matrix inputs = input_model.getSolutions();
 
   if (selfTransfer) {
@@ -162,7 +168,9 @@ int main (int argc, char** argv)
       std::cerr << "*** Error reading boundary data\n";
       return 7;
     }
+  }
 
+  if (!input_model.getBoundaryFile().empty() || fixup) {
     IFEM::cout << "\n\tTransferring surface roughness using nearest match" << std::endl;
     Vector z0 = output_model.nodalTransfer(input_model);
 
@@ -179,31 +187,31 @@ int main (int argc, char** argv)
     IFEM::cout << "\n<<< Writing boundary data to file '"
                << output_model.getBoundaryFile() << "'" << std::endl;
     output_model.writeBoundaryData();
+  }
 
-    if (input_model.opt.format > -1) {
-      int nBlock_in = 0;
-      int geoBlk_in = 0;
-      std::string vtf_in = argv[1];
-      vtf_in.replace(vtf_in.size()-5, 5, "_input.xinp");
-      if (!input_model.writeGlvG(geoBlk_in, vtf_in.c_str())) {
-        std::cerr << "Error writing VTF file for input model." << std::endl;
-        return 8;
-      }
-
-      int nBlock_out = 0;
-      int geoBlk_out = 0;
-      if (!output_model.writeGlvG(geoBlk_out, argv[1])) {
-        std::cerr << "Error writing VTF file for output model." << std::endl;
-        return 9;
-      }
-
-      input_model.writeSolutionVectors(nBlock_in, {});
-      output_model.writeSolutionVectors(nBlock_out, {});
-      input_model.writeGlvBC(nBlock_in);
-      output_model.writeGlvBC(nBlock_out);
-      input_model.writeGlvStep(input_model.currentStep(), 0.0, 0);
-      output_model.writeGlvStep(output_model.currentStep(), 0.0, 0);
+  if (input_model.opt.format > -1) {
+    int nBlock_in = 0;
+    int geoBlk_in = 0;
+    std::string vtf_in = argv[1];
+    vtf_in.replace(vtf_in.size()-5, 5, "_input.xinp");
+    if (!input_model.writeGlvG(geoBlk_in, vtf_in.c_str())) {
+      std::cerr << "Error writing VTF file for input model." << std::endl;
+      return 8;
     }
+
+    int nBlock_out = 0;
+    int geoBlk_out = 0;
+    if (!output_model.writeGlvG(geoBlk_out, argv[1])) {
+      std::cerr << "Error writing VTF file for output model." << std::endl;
+      return 9;
+    }
+
+    input_model.writeSolutionVectors(nBlock_in, {});
+    output_model.writeSolutionVectors(nBlock_out, {});
+    input_model.writeGlvBC(nBlock_in);
+    output_model.writeGlvBC(nBlock_out);
+    input_model.writeGlvStep(input_model.currentStep(), 0.0, 0);
+    output_model.writeGlvStep(output_model.currentStep(), 0.0, 0);
   }
 
   return 0;

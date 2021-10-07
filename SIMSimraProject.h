@@ -13,10 +13,10 @@
 #ifndef SIMSIMRAPROJECT_H
 #define SIMSIMRAPROJECT_H
 
-#include "SIM3D.h"
+#include "SimraEnums.h"
 #include "SimraIntegrand.h"
-#include "SIMSimraBase.h"
 #include "SimraIO.h"
+#include "SIMSimraBase.h"
 
 #include <fstream>
 
@@ -119,14 +119,6 @@ protected:
   //! \brief Parses a data section from an XML document.
   //! \param[in] elem The XML element to parse
   bool parse(const TiXmlElement *elem) override;
-
-  //! \brief Enumeration of result file types.
-  enum ResultsType {
-    BOUNDARY_FILE, //!< Boundary condition file
-    RESTART_FILE, //!< Restart file, holds one time step
-    HISTORY_FILE, //!< History file, holds multiple time steps
-    INIT_FILE     //!< Init file, holds one time step
-  };
 
   ResultsType rType = RESTART_FILE; //!< Type for result file
   std::string resultFile; //!< File with result vectors

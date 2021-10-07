@@ -137,23 +137,25 @@ bool SIMSimraProject::readResults ()
   auto&& copySolution = [nx,ny,nz,this](const auto& cr, Vectors& solution)
   {
     size_t idx = 0;
+    double vRef = rType == INIT_FILE ? 1.0 : uRef;
+    double mRef = rType == INIT_FILE ? 1.0 : lRef;
     for (size_t k = 0; k < nz; ++k)
       for (size_t j = 0; j < ny; ++j)
         for (size_t i = 0; i < nx; ++i, ++idx) {
-          solution[0][idx] = cr.u1[k + i*nz + j*nz*nx] * uRef;
-          solution[1][idx] = cr.u2[k + i*nz + j*nz*nx] * uRef;
-          solution[2][idx] = cr.u3[k + i*nz + j*nz*nx] * uRef;
-          solution[3][idx] = cr.ps[k + i*nz + j*nz*nx] * uRef * uRef;
-          solution[4][idx] = cr.tk[k + i*nz + j*nz*nx] * uRef * uRef;
-          solution[5][idx] = cr.td[k + i*nz + j*nz*nx] * pow(uRef,3) / lRef;
-          solution[6][idx]= cr.vtef[k + i*nz + j*nz*nx] * uRef * lRef;
+          solution[0][idx] = cr.u1[k + i*nz + j*nz*nx] * vRef;
+          solution[1][idx] = cr.u2[k + i*nz + j*nz*nx] * vRef;
+          solution[2][idx] = cr.u3[k + i*nz + j*nz*nx] * vRef;
+          solution[3][idx] = cr.ps[k + i*nz + j*nz*nx] * vRef * vRef;
+          solution[4][idx] = cr.tk[k + i*nz + j*nz*nx] * vRef * vRef;
+          solution[5][idx] = cr.td[k + i*nz + j*nz*nx] * pow(vRef,3) / mRef;
+          solution[6][idx]= cr.vtef[k + i*nz + j*nz*nx] * vRef * mRef;
           solution[7][idx] = cr.pt[k + i*nz + j*nz*nx];
           solution[8][idx] = cr.pts[k + i*nz + j*nz*nx];
           solution[9][idx] = cr.rho[k + i*nz + j*nz*nx];
           solution[10][idx] = cr.rhos[k + i*nz + j*nz*nx];
           solution[11][idx] = cr.strat[k + i*nz + j*nz*nx];
         }
-    return cr.time * lRef / uRef;
+    return cr.time * vRef / mRef;
   };
 
   auto&& copyElmPressure = [nx,ny,nz](const auto& in,
