@@ -11,9 +11,12 @@
 //==============================================================================
 
 #include "SimraIO.h"
+
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <ostream>
+#include <stdio.h>
 #include <string>
 
 

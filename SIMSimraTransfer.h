@@ -14,6 +14,15 @@
 #define SIM_SIMRA_TRANSFER_H
 
 #include "SIMSimraProject.h"
+#include "SimraIO.h"
+
+#include "MatVec.h"
+
+#include <array>
+#include <vector>
+
+
+class TiXmlElement;
 
 
 /*!

@@ -13,14 +13,17 @@
 
 #include "IFEM.h"
 #include "ASMs3DSimra.h"
-#include "DataExporter.h"
-#include "HDF5Writer.h"
-#include "SIMenums.h"
-#include "SIMFSWallDistance.h"
-#include "SIMSimraTransfer.h"
-#include "Profiler.h"
-#include "SIMargsBase.h"
+#include "LogStream.h"
 #include "SimraIO.h"
+
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <strings.h>
+#include <vector>
+
 
 /*!
  \brief Compares two init.dat files.
