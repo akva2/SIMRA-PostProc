@@ -60,14 +60,14 @@ if(NOT MPI_FOUND OR IFEM_SERIAL_TESTS_IN_PARALLEL)
   ifem_add_vtf_test(Box.vreg SIMRA-PostProc)
   ifem_add_hdf5_test(Box.hreg SIMRA-PostProc)
   add_test(Box_transfer ${PROJECT_SOURCE_DIR}/scripts/runCompareTest.sh
-                        ${PROJECT_BINARY_DIR}/bin/SIMRA-SolutionTransfer
-                        ${PROJECT_BINARY_DIR}/bin/SIMRA-CompareSetup
+                        ${EXECUTABLE_OUTPUT_PATH}/SIMRA-SolutionTransfer
+                        ${EXECUTABLE_OUTPUT_PATH}/SIMRA-CompareSetup
                         Box-transfer.xinp
                         ${PROJECT_SOURCE_DIR}/Test
                         1e-5)
   add_test(Box_classify ${PROJECT_SOURCE_DIR}/scripts/runCompareTest.sh
-                        ${PROJECT_BINARY_DIR}/bin/SIMRA-SolutionTransfer
-                        ${PROJECT_BINARY_DIR}/bin/SIMRA-CompareSetup
+                        ${EXECUTABLE_OUTPUT_PATH}/SIMRA-SolutionTransfer
+                        ${EXECUTABLE_OUTPUT_PATH}/SIMRA-CompareSetup
                         Box-classify.xinp
                         ${PROJECT_SOURCE_DIR}/Test
                         1e-5)
