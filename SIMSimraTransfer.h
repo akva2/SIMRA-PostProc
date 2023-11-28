@@ -22,8 +22,7 @@
 #include <string>
 #include <vector>
 
-
-class TiXmlElement;
+namespace tinyxml2 { class XMLElement; }
 
 
 /*!
@@ -94,7 +93,7 @@ public:
 protected:
   //! \brief Parses a data section from an XML document.
   //! \param[in] elem The XML element to parse
-  bool parse(const TiXmlElement *elem) override;
+  bool parse(const tinyxml2::XMLElement* elem) override;
 
   //! \brief Enumeration of boundary file types.
   enum BoundaryType {

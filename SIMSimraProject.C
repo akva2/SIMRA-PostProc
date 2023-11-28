@@ -29,11 +29,9 @@
 #include <array>
 #include <cmath>
 #include <ext/alloc_traits.h>
-#include <initializer_list>
 #include <iostream>
-#include <memory>
 #include <strings.h>
-#include <tinyxml.h>
+#include <tinyxml2.h>
 #include <utility>
 #include <vector>
 
@@ -46,10 +44,10 @@ SIMSimraProject::SIMSimraProject (const std::string& context) :
 }
 
 
-bool SIMSimraProject::parse (const TiXmlElement *elem)
+bool SIMSimraProject::parse (const tinyxml2::XMLElement* elem)
 {
   if (!strcasecmp(elem->Value(),inputContext.c_str())) {
-    const TiXmlElement* child = elem->FirstChildElement();
+    const tinyxml2::XMLElement* child = elem->FirstChildElement();
     for (; child; child = child->NextSiblingElement())
       if (!strcasecmp(child->Value(), "resultfile")) {
         resultFile = utl::getValue(child, "resultfile");
