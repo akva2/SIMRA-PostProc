@@ -39,9 +39,7 @@ public:
   //! \brief Default constructor.
   //! \param[in] n Number of spatial dimensions
   //! \param[in] w Wall value
-  FSWallDistance(unsigned short int n = 3, double w = 1.0);
-  //! \brief Empty destructor.
-  virtual ~FSWallDistance() {}
+  explicit FSWallDistance(unsigned short int n = 3, double w = 1.0);
 
   using IntegrandBase::evalInt;
   //! \brief Evaluates the integrand at an interior point.

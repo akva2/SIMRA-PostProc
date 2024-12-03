@@ -135,7 +135,7 @@ struct SimraIO {
   }
 
   //! \brief Skip a history step.
-  void skipHistory(std::istream& ifs, std::vector<T>& elmPressures)
+  void skipHistory(std::istream& ifs, const std::vector<T>& elmPressures)
   {
     ifs.seekg(4, std::ios::cur);
     ifs.seekg(sizeof(T), std::ios::cur);
