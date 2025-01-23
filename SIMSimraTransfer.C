@@ -104,7 +104,7 @@ Matrix SIMSimraTransfer::getSolutions () const
 {
   Matrix result(solution.size(), this->getNoNodes());
   for (size_t i = 0; i < solution.size(); ++i)
-    result.fillRow(i+1, solution[i].data());
+    result.fillRow(i+1, solution[i].ptr());
 
   return result;
 }

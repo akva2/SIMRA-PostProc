@@ -265,25 +265,25 @@ bool SIMSimraProject::writeSolutionVectors (int& nBlock, const Vector& sol)
 Vector SIMSimraProject::getSolution () const
 {
   if (solution.empty())
-    return {};
+    return Vector();
 
   Matrix stmp(7, this->getPatch(1)->getNoNodes());
-  stmp.fillRow(1, solution[0].data());
-  stmp.fillRow(2, solution[1].data());
-  stmp.fillRow(3, solution[2].data());
-  stmp.fillRow(4, solution[6].data());
-  stmp.fillRow(5, solution[7].data());
-  stmp.fillRow(6, solution[4].data());
-  stmp.fillRow(7, solution[5].data());
+  stmp.fillRow(1, solution[0].ptr());
+  stmp.fillRow(2, solution[1].ptr());
+  stmp.fillRow(3, solution[2].ptr());
+  stmp.fillRow(4, solution[6].ptr());
+  stmp.fillRow(5, solution[7].ptr());
+  stmp.fillRow(6, solution[4].ptr());
+  stmp.fillRow(7, solution[5].ptr());
 
-  return stmp;
+  return stmp.toVec();
 }
 
 
 Vector& SIMSimraProject::getDistance ()
 {
   if (calcYp)
-   itg.dist.resize(this->getNoNodes());
+    itg.dist.resize(this->getNoNodes());
   else
     itg.dist.clear();
 
