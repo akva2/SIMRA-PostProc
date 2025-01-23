@@ -42,7 +42,7 @@ void SimraIntegrand::velocityGradient(const FiniteElement& fe,
 {
   for (unsigned short int j = 1; j <= 3; j++)
   {
-    Vector dNdX = fe.grad(1).getColumn(j);
+    RealArray dNdX = fe.grad(1).getColumn(j);
     for (unsigned short int i = 1; i <= nsd; i++)
       grad(i,j) = vec[0].dot(dNdX, i-1, npv);
   }
@@ -70,9 +70,9 @@ double SimraIntegrand::temperature(const FiniteElement& fe,
 Vec3 SimraIntegrand::temperatureGradient(const FiniteElement& fe,
                                          const Vectors& vec) const
 {
-  Vector dT;
+  RealArray dT;
   fe.grad(1).multiply(vec[0], dT, 1.0, 0.0, true, npv, 1, 4, 0);
-  return Vec3(dT.data(), 3);
+  return dT;
 }
 
 
@@ -125,13 +125,13 @@ bool SimraIntegrand::initElement(const std::vector<int>& MNPC,
 {
   if (!this->IntegrandBase::initElement(MNPC, elmInt))
     return false;
-  int ierr = 0;
-  if (!dist.empty()) {
-    elmInt.vec.resize(elmInt.vec.size()+1);
-    ierr = utl::gather(MNPC,1,dist,elmInt.vec.back());
-    if (ierr != 0)
-      std::cerr << "*** Error extract distance" << std::endl;
-  }
+  else if (dist.empty())
+    return true;
+
+  elmInt.vec.resize(elmInt.vec.size()+1);
+  int ierr = utl::gather(MNPC,1,dist,elmInt.vec.back());
+  if (ierr != 0)
+    std::cerr <<" *** Error extract distance ("<< ierr <<")"<< std::endl;
 
   return ierr == 0;
 }
@@ -140,11 +140,11 @@ bool SimraIntegrand::initElement(const std::vector<int>& MNPC,
 bool SimraIntegrand::evalSol(Vector& s, const FiniteElement& fe,
                              const Vec3&, const std::vector<int>& MNPC) const
 {
-  ElmMats elmInt;
-  const_cast<SimraIntegrand*>(this)->initElement(MNPC, elmInt);
-  Vectors& elmVec = elmInt.vec;
+  ElmMats elm;
+  const_cast<SimraIntegrand*>(this)->initElement(MNPC,elm);
+
   Tensor grad(nsd);
-  this->velocityGradient(fe, grad, elmVec);
+  this->velocityGradient(fe, grad, elm.vec);
 
   s.reserve(this->getNoFields(2));
   s = grad;
@@ -152,19 +152,19 @@ bool SimraIntegrand::evalSol(Vector& s, const FiniteElement& fe,
   s.push_back(this->pressure(fe));
 
   Tensor sigma(nsd);
-  this->stress(fe, sigma, elmVec);
+  this->stress(fe, sigma, elm.vec);
   for (size_t i = 0; i < sigma.size(); ++i)
     s.push_back(sigma.ptr()[i]);
 
-  Vec3 dT = this->temperatureGradient(fe, elmVec);
+  Vec3 dT = this->temperatureGradient(fe, elm.vec);
   s.push_back(dT[0]);
   s.push_back(dT[1]);
   s.push_back(dT[2]);
 
   if (!dist.empty()) {
-    double yp = elmVec.back().dot(fe.N);
+    double yp = elm.vec.back().dot(fe.N);
     static constexpr double Cmu = 0.09;
-    double tke = this->TKE(fe, elmVec);
+    double tke = this->TKE(fe, elm.vec);
     double utau = pow(Cmu, 0.25) * sqrt(tke);
     s.push_back(yp*utau/nu);
   }
