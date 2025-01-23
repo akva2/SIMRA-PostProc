@@ -145,13 +145,13 @@ int main (int argc, char** argv)
   Matrix inputs = input_model.getSolutions();
 
   if (selfTransfer) {
-    output_model.setSolutions(input_model.getSolutions());
+    output_model.setSolutions(input_model.getSolutions().toVec());
     IFEM::cout << "\tUsing original solution vectors since selfTransfer was requested." << std::endl;
   } else {
     IFEM::cout << "\tTransferring nodal data using linear interpolation" << std::endl;
     Vector output_vector;
     if (!output_model.getPatch(1)->evaluate(input_model.getPatch(1),
-                                            inputs,
+                                            inputs.toVec(),
                                             output_vector)) {
       std::cerr << "*** Error transfering nodal data" << std::endl;
       return 6;
@@ -208,8 +208,8 @@ int main (int argc, char** argv)
         return 9;
       }
 
-      input_model.writeSolutionVectors(nBlock_in, {});
-      output_model.writeSolutionVectors(nBlock_out, {});
+      input_model.writeSolutionVectors(nBlock_in, Vector());
+      output_model.writeSolutionVectors(nBlock_out, Vector());
       input_model.writeGlvBC(nBlock_in);
       output_model.writeGlvBC(nBlock_out);
       input_model.writeGlvStep(input_model.currentStep(), 0.0, 0);
