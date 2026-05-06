@@ -13,7 +13,7 @@
 
 /*! \mainpage SIMRA result postprocessing
 
-\author Yared W. Bekele / NTNU
+\author Arne Morten Kvarving / SINTEF
 
 \section intro Introduction
 This is a postprocessing application for SIMRA results built on top of the IFEM library.
