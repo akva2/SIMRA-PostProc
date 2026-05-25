@@ -120,7 +120,6 @@ int main (int argc, char** argv)
   }
 
   int iStep = 1;
-  std::vector<std::string> prefix;
   while (model.readResults()) {
 
     IFEM::cout << "\n  step=" << iStep << "  time=" << model.getSolutionTime() << std::endl;
@@ -141,24 +140,16 @@ int main (int argc, char** argv)
 
     // Project the secondary solution
     sol = model.getSolution();
-    size_t idx = 0;
     model.setMode(SIM::RECOVERY);
     projs.resize(model.opt.project.size());
-    TimeDomain time;
-    time.t = model.getSolutionTime();
-    for (const SIMoptions::ProjectionMap::value_type& prj : model.opt.project) {
-      if (prj.first <= SIMoptions::NONE)
-        idx++; // No projection for this norm group
-      else {
-        Matrix stmp(projs[idx++]);
-        if (!model.project(stmp,sol,prj.first,time))
+    TimeDomain time(model.getSolutionTime());
+    SIMoptions::ProjectionMap::const_iterator pit = model.opt.project.begin();
+    for (size_t idx = 0; idx < projs.size(); ++idx, ++pit)
+      if (pit->first > SIMoptions::NONE)
+        if (Matrix stmp(projs[idx]); !model.project(stmp,sol,pit->first,time))
           return 5;
-      }
-      if (iStep == 1 && model.opt.format > -1)
-        prefix.push_back(prj.second);
-    }
 
-    if (!model.solutionNorms(time, Vectors(1,sol), projs, gNorm, &eNorm)) {
+    if (!model.solutionNorms(time, {sol}, projs, gNorm, &eNorm)) {
       std::cerr << "Error calculating solution norms." << std::endl;
       return 6;
     }
@@ -191,18 +182,17 @@ int main (int argc, char** argv)
         return 7;
       }
 
-      idx = 1;
-      for (const SIMoptions::ProjectionMap::value_type& prj : model.opt.project) {
-        if (prj.first > SIMoptions::NONE)
-          if (!model.writeGlvP(projs[idx-1], 1, nBlock,
-                               100+model.getProblem()->getNoFields(2)*idx, prj.second.c_str())) {
+      pit = model.opt.project.begin();
+      for (size_t idx = 0; idx < projs.size(); ++idx, ++pit)
+        if (pit->first > SIMoptions::NONE)
+          if (!model.writeGlvP(projs[idx], 1, nBlock,
+                               100+model.getProblem()->getNoFields(2)*(1+idx),
+                               pit->second.c_str())) {
             std::cerr << "Error writing projection to VTF" << std::endl;
             return 8;
           }
-        ++idx;
-      }
 
-      if (!model.writeGlvN(eNorm, iStep, nBlock, prefix)) {
+      if (!model.writeGlvN(eNorm, iStep, nBlock)) {
         std::cerr << "Error writing norms to VTF" << std::endl;;
         return 9;
       }
